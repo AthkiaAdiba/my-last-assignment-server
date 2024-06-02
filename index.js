@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
@@ -32,11 +32,41 @@ async function run() {
 
 
         // users related api
-        app.post('/users', async(req, res) => {
+
+        // get all users from database
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        });
+
+        // set admin role
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const setRole = req.body;
+            const updatedDoc = {
+                $set: {
+                    role: setRole.role
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
+
+        // a user save to database
+        app.post('/users', async (req, res) => {
             const user = req.body;
+            // insert email if user does not exists
+            // you can do this many ways (1. email , 2. upsert 3. simple checking)
+            const query = { email: user.email }
+            const existing = await userCollection.findOne(query);
+            if (existing) {
+                return res.send({ message: 'User already exist', insertedId: null })
+            }
             const result = await userCollection.insertOne(user);
             res.send(result)
-        })
+        });
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
