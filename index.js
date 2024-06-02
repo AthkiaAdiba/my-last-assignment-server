@@ -71,8 +71,18 @@ async function run() {
 
         // pet related apis
 
+        // get pets from database userwise
+        app.get('/pets/:email', verifyToken, async (req, res) => {
+            
+            if (req.decoded.email !== req.params.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            const result = await petCollection.find({email: req.params.email}).toArray();
+            res.send(result)
+        })
+
         // save a pet to the database
-        app.post('/pets', async(req, res) => {
+        app.post('/pets', async (req, res) => {
             const pet = req.body;
             const result = await petCollection.insertOne(pet);
             res.send(result);
