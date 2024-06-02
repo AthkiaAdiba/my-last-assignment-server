@@ -30,6 +30,7 @@ async function run() {
 
         const database = client.db("petsDB");
         const userCollection = database.collection("users");
+        const petCollection = database.collection("pets");
 
 
         // jwt related api
@@ -66,6 +67,16 @@ async function run() {
             }
             next();
         }
+
+
+        // pet related apis
+
+        // save a pet to the database
+        app.post('/pets', async(req, res) => {
+            const pet = req.body;
+            const result = await petCollection.insertOne(pet);
+            res.send(result);
+        })
 
 
         // users related api
