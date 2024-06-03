@@ -78,8 +78,16 @@ async function run() {
                 return res.status(403).send({ message: 'forbidden access' })
             }
             const result = await petCollection.find({ email: req.params.email }).toArray();
-            console.log(result)
+            
             res.send(result)
+        });
+
+        // get single pet id wise
+        app.get('/pet/:id', verifyToken, async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await petCollection.findOne(query);
+            res.send(result);
         })
 
         // save a pet to the database
@@ -89,6 +97,22 @@ async function run() {
             res.send(result);
         });
 
+        // update a pet in the database
+        // app.patch('/updatePet/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: new ObjectId(id) }
+        //     const pet = req.body;
+        //     const updatedDoc = {
+        //         $set: {
+
+                    
+        //         }
+        //     }
+        //     const result = await petCollection.updateOne(filter, updatedDoc)
+        //     res.send(result);
+        // })
+
+        // change adopted status
         app.patch('/pets/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
