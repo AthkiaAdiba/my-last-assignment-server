@@ -83,14 +83,28 @@ async function run() {
         })
 
         // save a pet to the database
-        app.post('/pets', async (req, res) => {
+        app.post('/pets', verifyToken, async (req, res) => {
             const pet = req.body;
             const result = await petCollection.insertOne(pet);
             res.send(result);
         });
 
-        // Delete a pet from pet collection
-        app.delete('/deletePet/:id', async (req, res) => {
+        app.patch('/pets/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const setAdopted = req.body;
+            const updatedDoc = {
+                $set: {
+
+                    adopted: setAdopted.adopted
+                }
+            }
+            const result = await petCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
+
+        // Delete a pet from the pet collection
+        app.delete('/deletePet/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await petCollection.deleteOne(query)
