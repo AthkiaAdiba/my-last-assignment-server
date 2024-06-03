@@ -73,11 +73,12 @@ async function run() {
 
         // get pets from database userwise
         app.get('/pets/:email', verifyToken, async (req, res) => {
-            
+
             if (req.decoded.email !== req.params.email) {
                 return res.status(403).send({ message: 'forbidden access' })
             }
-            const result = await petCollection.find({email: req.params.email}).toArray();
+            const result = await petCollection.find({ email: req.params.email }).toArray();
+            console.log(result)
             res.send(result)
         })
 
@@ -86,7 +87,15 @@ async function run() {
             const pet = req.body;
             const result = await petCollection.insertOne(pet);
             res.send(result);
-        })
+        });
+
+        // Delete a pet from pet collection
+        app.delete('/deletePet/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await petCollection.deleteOne(query)
+            res.send(result);
+        });
 
 
         // users related api
