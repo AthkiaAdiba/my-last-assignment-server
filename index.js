@@ -78,14 +78,14 @@ async function run() {
                 return res.status(403).send({ message: 'forbidden access' })
             }
             const result = await petCollection.find({ email: req.params.email }).toArray();
-            
+
             res.send(result)
         });
 
         // get single pet id wise
-        app.get('/pet/:id', verifyToken, async(req, res) => {
+        app.get('/pet/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await petCollection.findOne(query);
             res.send(result);
         })
@@ -98,19 +98,26 @@ async function run() {
         });
 
         // update a pet in the database
-        // app.patch('/updatePet/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const filter = { _id: new ObjectId(id) }
-        //     const pet = req.body;
-        //     const updatedDoc = {
-        //         $set: {
-
-                    
-        //         }
-        //     }
-        //     const result = await petCollection.updateOne(filter, updatedDoc)
-        //     res.send(result);
-        // })
+        app.patch('/updatePet/:id', async (req, res) => {
+            const id = req.params.id;
+            const pet = req.body;
+            const filter = { _id: new ObjectId(id) }
+            console.log(pet)
+            const updatedDoc = {
+                $set: {
+                    pet_name: pet.pet_name,
+                    pet_category: pet.pet_category,
+                    pet_image: pet.pet_image,
+                    pet_age: pet.pet_age,
+                    pet_location: pet.pet_location,
+                    short_description: pet.short_description,
+                    long_description: pet.long_description,
+                    date: pet.date
+                }
+            }
+            const result = await petCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
 
         // change adopted status
         app.patch('/pets/:id', verifyToken, async (req, res) => {
