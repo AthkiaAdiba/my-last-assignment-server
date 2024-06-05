@@ -31,6 +31,7 @@ async function run() {
         const database = client.db("petsDB");
         const userCollection = database.collection("users");
         const petCollection = database.collection("pets");
+        const adoptionCollection = database.collection("adoptions");
 
 
         // jwt related api
@@ -71,7 +72,7 @@ async function run() {
 
         // pet related apis
 
-        // get pets from database userwise
+        // get pets from database user wise
         app.get('/pets/:email', verifyToken, async (req, res) => {
 
             if (req.decoded.email !== req.params.email) {
@@ -82,13 +83,25 @@ async function run() {
             res.send(result)
         });
 
+        // get all pets by admin
+        app.get('/allPets', async(req, res) => {
+            const result = await petCollection.find().toArray();
+            res.send(result);
+        })
+
         // get single pet id wise
         app.get('/pet/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await petCollection.findOne(query);
             res.send(result);
-        })
+        });
+
+        // get all pets which are not adopted for pet listing page
+        app.get('/pets-unadopted', async (req, res) => {
+            const result = await petCollection.find({ adopted: false }).sort({ "date": -1 }).toArray();
+            res.send(result)
+        });
 
         // save a pet to the database
         app.post('/pets', verifyToken, async (req, res) => {
@@ -141,6 +154,17 @@ async function run() {
             const result = await petCollection.deleteOne(query)
             res.send(result);
         });
+
+
+
+        // adoption related api
+
+        // save adoption in the adoption collection to the database
+        app.post('/addAdoption', async(req, res) => {
+            const adoptionPet = req.body;
+            const result = await adoptionCollection.insertOne(adoptionPet)
+            res.send(result)
+        })
 
 
         // users related api
