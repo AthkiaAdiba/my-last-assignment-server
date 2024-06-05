@@ -159,8 +159,16 @@ async function run() {
 
         // adoption related api
 
+        // get adoption requests by created pet user email 
+        app.get('/adoptionRequests/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {owner_email: email}
+            const result = await adoptionCollection.find(query).toArray()
+            res.send(result);
+        })
+
         // save adoption in the adoption collection to the database
-        app.post('/addAdoption', async(req, res) => {
+        app.post('/addAdoption', verifyToken, async(req, res) => {
             const adoptionPet = req.body;
             const result = await adoptionCollection.insertOne(adoptionPet)
             res.send(result)
