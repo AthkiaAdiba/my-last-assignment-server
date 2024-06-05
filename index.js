@@ -174,6 +174,35 @@ async function run() {
             res.send(result)
         })
 
+        // set accepting status
+        app.patch('/statusAccept/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)}
+            
+            const updatedDoc = {
+                $set: {
+                    status: 'Accepted'
+                }
+            }
+            const result = await adoptionCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+        
+        
+        // set rejecting status
+        app.patch('/statusReject/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)}
+            
+            const updatedDoc = {
+                $set: {
+                    status: 'Reject'
+                }
+            }
+            const result = await adoptionCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        }) 
+
 
         // users related api
 
