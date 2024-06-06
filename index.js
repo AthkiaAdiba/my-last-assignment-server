@@ -32,6 +32,7 @@ async function run() {
         const userCollection = database.collection("users");
         const petCollection = database.collection("pets");
         const adoptionCollection = database.collection("adoptions");
+        const campaignCollection = database.collection("campaigns");
 
 
         // jwt related api
@@ -196,12 +197,23 @@ async function run() {
             
             const updatedDoc = {
                 $set: {
-                    status: 'Reject'
+                    status: 'Rejected'
                 }
             }
             const result = await adoptionCollection.updateOne(filter, updatedDoc)
             res.send(result)
-        }) 
+        });
+        
+        
+
+        // campaigns related apis
+        
+        // save a campaign to the database
+        app.post('/campaign', async(req, res) => {
+            const campaign = req.body;
+            const result = await campaignCollection.insertOne(campaign);
+            res.send(result)
+        })
 
 
         // users related api
