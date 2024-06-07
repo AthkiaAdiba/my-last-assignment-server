@@ -217,12 +217,12 @@ async function run() {
         });
 
         // get campaigns of specific user
-        app.get('/campaignCards/:email', async(req, res) => {
+        app.get('/campaignCards/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const result = await campaignCollection.find(query).toArray()
             res.send(result);
-        })
+        });
 
         // get campaign details id wise
         app.get('/campaignCard-details/:id', async (req, res) => {
@@ -246,8 +246,30 @@ async function run() {
             res.send(result);
         });
 
+        // update donation campaign
+        app.patch('/updateDonationCampaign/:id', async (req, res) => {
+            const id = req.params.id;
+            const campaign = req.body;
+            const filter = { _id: new ObjectId(id) }
+            console.log(campaign)
+
+            const updatedDoc = {
+                $set: {              
+                    pet_name: campaign.pet_name,
+                    maximumAmount: campaign.maximumAmount,
+                    pet_image: campaign.pet_image,
+                    create_date: campaign.create_date,  
+                    last_date: campaign.last_date,
+                    short_description: campaign.short_description,
+                    long_description: campaign.long_description
+                }
+            }
+            const result = await campaignCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
+
         // set unpaused state of donation campaign
-        app.patch('/setUnpause/:id', async(req, res) => {
+        app.patch('/setUnpause/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
 
@@ -261,9 +283,9 @@ async function run() {
         });
 
         // set paused state of donation campaign
-        app.patch('/setPause/:id', async(req, res) => {
+        app.patch('/setPause/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)}
+            const filter = { _id: new ObjectId(id) }
 
             const updatedDoc = {
                 $set: {
