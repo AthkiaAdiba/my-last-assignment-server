@@ -225,7 +225,7 @@ async function run() {
         })
 
         // get campaign details id wise
-        app.get('/campaignCards/:id', async (req, res) => {
+        app.get('/campaignCard-details/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await campaignCollection.findOne(query)
@@ -244,6 +244,35 @@ async function run() {
             }
             const result = await campaignCollection.updateOne(filter, updatedDoc)
             res.send(result);
+        });
+
+        // set unpaused state of donation campaign
+        app.patch('/setUnpause/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+
+            const updatedDoc = {
+                $set: {
+                    pause: false
+                }
+            }
+            const result = await campaignCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        });
+
+        // set paused state of donation campaign
+        app.patch('/setPause/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)}
+
+            const updatedDoc = {
+                $set: {
+                    pause: true
+                }
+            }
+
+            const result = await campaignCollection.updateOne(filter, updatedDoc)
+            res.send(result)
         })
 
         // save a campaign to the database
