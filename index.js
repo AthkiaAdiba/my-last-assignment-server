@@ -4,6 +4,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 
@@ -33,6 +34,7 @@ async function run() {
         const petCollection = database.collection("pets");
         const adoptionCollection = database.collection("adoptions");
         const campaignCollection = database.collection("campaigns");
+        const donationCollection = database.collection("donations");
 
 
         // jwt related api
@@ -207,6 +209,20 @@ async function run() {
         
 
         // campaigns related apis
+
+        // get all campaign data from database
+        app.get('/campaignCards', async(req, res) => {
+            const result = await campaignCollection.find().sort({"create_date": -1}).toArray();
+            res.send(result)
+        })
+
+        // get campaign details id wise
+        app.get('/campaignCards/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await campaignCollection.findOne(query)
+            res.send(result);
+        })
         
         // save a campaign to the database
         app.post('/campaign', async(req, res) => {
@@ -268,6 +284,27 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result)
         });
+
+
+        // payment intent
+        app.post('/create-payment-intent', async(req, res) => {
+            const {donation} = req.body;
+            if(donation <= 0){
+                return res.send({error: 'Invalid Donation'})
+            }
+            const donationAmount = parseInt(donation * 100);
+            console.log('in the intent', donationAmount)
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: donationAmount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
 
 
         // Send a ping to confirm a successful connection
