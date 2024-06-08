@@ -308,8 +308,25 @@ async function run() {
 
         // donation related apis
 
+        // get donations of specific user
+        app.get('/mtDonations/:email', verifyToken, async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email}
+            const result = await donationCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // get donators from donation collection
+        app.get('/donators/:id', verifyToken, async(req, res) => {
+            const id = req.params.id;
+            const query = {campaign_id: id}
+
+            const result = await donationCollection.find(query).toArray()
+            res.send(result)
+        })
+
         // save a donation to the database
-        app.post('/donations', async (req, res) => {
+        app.post('/donations', verifyToken, async (req, res) => {
             const donation = req.body;
             const result = await donationCollection.insertOne(donation);
             res.send(result)
