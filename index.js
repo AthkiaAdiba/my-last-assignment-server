@@ -268,6 +268,36 @@ async function run() {
             res.send(result);
         })
 
+        // substract donated_amount of campaign collection of specific donators called refund
+        app.patch('/refund/:id', verifyToken, async(req, res) => {
+            const donationId = req.params.id;
+            const query = {_id: new ObjectId(donationId)}
+            
+
+            const donationObject = await donationCollection.findOne(query)
+            // console.log(donationObject)
+            const donationAmount = parseInt(donationObject.donationAmount)
+            // console.log(donationAmount)
+
+            const filter = {_id: new ObjectId(donationObject.campaign_id)}
+
+            const campaignObject = await campaignCollection.findOne(filter)
+            // console.log(campaignObject)
+
+            const updatedDoc = {
+                $inc: {
+                    donated_amount: -donationAmount
+                }
+            }
+
+            const result = await campaignCollection.updateOne(filter, updatedDoc)
+
+            // delete after refund delete donation object
+            const result2 = await donationCollection.deleteOne(query);
+
+            res.send(result)
+        })
+
         // set unpaused state of donation campaign
         app.patch('/setUnpause/:id', async (req, res) => {
             const id = req.params.id;
