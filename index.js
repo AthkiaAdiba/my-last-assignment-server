@@ -35,6 +35,7 @@ async function run() {
         const adoptionCollection = database.collection("adoptions");
         const campaignCollection = database.collection("campaigns");
         const donationCollection = database.collection("donations");
+        const categoryCollection = database.collection("categories");
 
 
         // jwt related api
@@ -87,7 +88,7 @@ async function run() {
         });
 
         // get all pets by admin
-        app.get('/allPets', async (req, res) => {
+        app.get('/allPets', verifyToken, verifyAdmin, async (req, res) => {
             const result = await petCollection.find().toArray();
             res.send(result);
         })
@@ -102,9 +103,26 @@ async function run() {
 
         // get all pets which are not adopted for pet listing page
         app.get('/pets-unadopted', async (req, res) => {
-            const result = await petCollection.find({ adopted: false }).sort({ "date": -1 }).toArray();
+            const filter = req.query;
+            console.log(filter)
+            const limit = parseInt(filter.limit)
+            console.log(limit)
+
+
+            const query = {
+                adopted: false,
+                pet_name: { $regex: filter.search, $options: 'i' }
+            };
+
+
+
+            const result = await petCollection
+                .find(query).limit(limit).sort({ date: -1 }).toArray();
+
             res.send(result)
         });
+
+
 
         // save a pet to the database
         app.post('/pets', verifyToken, async (req, res) => {
@@ -114,7 +132,7 @@ async function run() {
         });
 
         // update a pet in the database
-        app.patch('/updatePet/:id', async (req, res) => {
+        app.patch('/updatePet/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const pet = req.body;
             const filter = { _id: new ObjectId(id) }
@@ -148,6 +166,41 @@ async function run() {
             }
             const result = await petCollection.updateOne(filter, updatedDoc)
             res.send(result);
+        });
+
+        // set Adopted true from adoption request page
+        app.patch('/adopted-true/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+
+            const adoption = await adoptionCollection.findOne(query)
+
+            const filter = { _id: new ObjectId(adoption.added_pet_id) }
+
+            const updatedDoc = {
+                $set: {
+                    adopted: true
+                }
+            }
+
+            const result = await petCollection.updateOne(filter, updatedDoc)
+            console.log(result)
+        })
+
+
+        // set not adopted status
+        app.patch('/notAdopted/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const setAdopted = req.body;
+            const updatedDoc = {
+                $set: {
+
+                    adopted: setAdopted.adopted
+                }
+            }
+            const result = await petCollection.updateOne(filter, updatedDoc)
+            res.send(result);
         })
 
         // Delete a pet from the pet collection
@@ -163,7 +216,7 @@ async function run() {
         // adoption related api
 
         // get adoption requests by created pet user email 
-        app.get('/adoptionRequests/:email', async (req, res) => {
+        app.get('/adoptionRequests/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const query = { owner_email: email }
             const result = await adoptionCollection.find(query).toArray()
@@ -193,16 +246,16 @@ async function run() {
 
 
         // set rejecting status
-        app.patch('/statusReject/:id', async (req, res) => {
+        app.delete('/statusReject/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
-            const filter = { _id: new ObjectId(id) }
+            const query = { _id: new ObjectId(id) }
 
-            const updatedDoc = {
-                $set: {
-                    status: 'Rejected'
-                }
-            }
-            const result = await adoptionCollection.updateOne(filter, updatedDoc)
+            // const updatedDoc = {
+            //     $set: {
+            //         status: 'Rejected'
+            //     }
+            // }
+            const result = await adoptionCollection.deleteOne(query)
             res.send(result)
         });
 
@@ -210,14 +263,47 @@ async function run() {
 
         // campaigns related apis
 
-        // get all campaign data from database
+        // get all campaigns data from database for donation campaigns page
         app.get('/campaignCards', async (req, res) => {
-            const result = await campaignCollection.find().sort({ "create_date": -1 }).toArray();
+            const filter = req.query;
+            console.log(filter)
+            const limit = parseInt(filter.limit)
+            console.log(limit)
+
+            const result = await campaignCollection
+                .find().limit(limit).sort({ "create_date": -1 }).toArray();
+            res.send(result)
+        });
+
+        // get all campaigns for admin page 
+        app.get('/adminPage', verifyToken, verifyAdmin, async (req, res) => {
+            const result = await campaignCollection.find().toArray();
+            res.send(result)
+        })
+
+        // get 3 campaign data of recommended for showing on campaign card details page
+        app.get('/recommended-campaigns', verifyToken, async (req, res) => {
+            const currentDate = new Date();
+
+            const query = {
+                pause: false,
+                $expr: {
+                    $and: [
+                        { $gte: [{ $toDate: "$last_date" }, currentDate] }
+                    ]
+                }
+            }
+
+            const result = await campaignCollection
+                .find(query)
+                .limit(3)
+                .toArray();
+
             res.send(result)
         });
 
         // get campaigns of specific user
-        app.get('/campaignCards/:email', async (req, res) => {
+        app.get('/campaignCards/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const result = await campaignCollection.find(query).toArray()
@@ -225,7 +311,7 @@ async function run() {
         });
 
         // get campaign details id wise
-        app.get('/campaignCard-details/:id', async (req, res) => {
+        app.get('/campaignCard-details/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await campaignCollection.findOne(query)
@@ -233,7 +319,7 @@ async function run() {
         });
 
         // inctease donated amount
-        app.patch('/donation-increase/:id', async (req, res) => {
+        app.patch('/donation-increase/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const { donationAmount } = req.body;
@@ -247,18 +333,18 @@ async function run() {
         });
 
         // update donation campaign
-        app.patch('/updateDonationCampaign/:id', async (req, res) => {
+        app.patch('/updateDonationCampaign/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const campaign = req.body;
             const filter = { _id: new ObjectId(id) }
             console.log(campaign)
 
             const updatedDoc = {
-                $set: {              
+                $set: {
                     pet_name: campaign.pet_name,
                     maximumAmount: campaign.maximumAmount,
                     pet_image: campaign.pet_image,
-                    create_date: campaign.create_date,  
+                    create_date: campaign.create_date,
                     last_date: campaign.last_date,
                     short_description: campaign.short_description,
                     long_description: campaign.long_description
@@ -269,17 +355,17 @@ async function run() {
         })
 
         // substract donated_amount of campaign collection of specific donators called refund
-        app.patch('/refund/:id', verifyToken, async(req, res) => {
+        app.patch('/refund/:id', verifyToken, async (req, res) => {
             const donationId = req.params.id;
-            const query = {_id: new ObjectId(donationId)}
-            
+            const query = { _id: new ObjectId(donationId) }
+
 
             const donationObject = await donationCollection.findOne(query)
             // console.log(donationObject)
             const donationAmount = parseInt(donationObject.donationAmount)
             // console.log(donationAmount)
 
-            const filter = {_id: new ObjectId(donationObject.campaign_id)}
+            const filter = { _id: new ObjectId(donationObject.campaign_id) }
 
             const campaignObject = await campaignCollection.findOne(filter)
             // console.log(campaignObject)
@@ -299,7 +385,7 @@ async function run() {
         })
 
         // set unpaused state of donation campaign
-        app.patch('/setUnpause/:id', async (req, res) => {
+        app.patch('/setUnpause/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
 
@@ -313,7 +399,7 @@ async function run() {
         });
 
         // set paused state of donation campaign
-        app.patch('/setPause/:id', async (req, res) => {
+        app.patch('/setPause/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
 
@@ -328,7 +414,7 @@ async function run() {
         })
 
         // save a campaign to the database
-        app.post('/campaign', async (req, res) => {
+        app.post('/campaign', verifyToken, async (req, res) => {
             const campaign = req.body;
             const result = await campaignCollection.insertOne(campaign);
             res.send(result)
@@ -339,17 +425,17 @@ async function run() {
         // donation related apis
 
         // get donations of specific user
-        app.get('/mtDonations/:email', verifyToken, async(req, res) => {
+        app.get('/mtDonations/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
-            const query = {email: email}
+            const query = { email: email }
             const result = await donationCollection.find(query).toArray();
             res.send(result);
         })
 
         // get donators from donation collection
-        app.get('/donators/:id', verifyToken, async(req, res) => {
+        app.get('/donators/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
-            const query = {campaign_id: id}
+            const query = { campaign_id: id }
 
             const result = await donationCollection.find(query).toArray()
             res.send(result)
@@ -365,7 +451,7 @@ async function run() {
 
         // users related api
 
-        // get all users from database
+        // get all users from database for admin route
         app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
@@ -416,6 +502,12 @@ async function run() {
             res.send(result)
         });
 
+
+        // get categories section of home page
+        app.get('/categories', async (req, res) => {
+            const result = await categoryCollection.find().toArray();
+            res.send(result)
+        })
 
         // payment intent
         app.post('/create-payment-intent', async (req, res) => {
