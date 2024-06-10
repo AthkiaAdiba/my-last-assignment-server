@@ -27,7 +27,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const database = client.db("petsDB");
         const userCollection = database.collection("users");
@@ -108,13 +108,10 @@ async function run() {
             const limit = parseInt(filter.limit)
             console.log(limit)
 
-
             const query = {
                 adopted: false,
                 pet_name: { $regex: filter.search, $options: 'i' }
             };
-
-
 
             const result = await petCollection
                 .find(query).limit(limit).sort({ date: -1 }).toArray();
@@ -122,8 +119,7 @@ async function run() {
             res.send(result)
         });
 
-
-
+        
         // save a pet to the database
         app.post('/pets', verifyToken, async (req, res) => {
             const pet = req.body;
@@ -231,7 +227,7 @@ async function run() {
         })
 
         // set accepting status
-        app.patch('/statusAccept/:id', async (req, res) => {
+        app.patch('/statusAccept/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
 
@@ -531,8 +527,8 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
